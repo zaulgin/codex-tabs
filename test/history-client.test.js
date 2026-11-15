@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { test } = require('node:test');
 const { setTimeout: delay } = require('node:timers/promises');
-const { HistoryClient } = require('../src/history-client');
+const { HistoryClient, historyErrorMessage } = require('../src/history-client');
 
 const fixture = path.join(__dirname, 'fixtures', 'history-server.js');
 
@@ -45,6 +45,15 @@ function safeError(code) {
   };
 }
 
+test('shows a useful history failure without exposing private upstream details', () => {
+  const message = historyErrorMessage({ code: 'HISTORY_TIMEOUT', message: 'synthetic-private-marker' });
+  assert.match(message, /вовремя/);
+  assert.equal(message.includes('synthetic-private-marker'), false);
+  assert.equal(historyErrorMessage({ code: 'UNKNOWN', message: 'synthetic-private-marker' }), undefined);
+  assert.equal(historyErrorMessage({ code: '__proto__' }), undefined);
+  assert.equal(historyErrorMessage(null), undefined);
+});
+
 test('initializes the helper and returns chunked UTF-8 history pages with search', async (t) => {
   const options = await fixtureOptions(t);
   const client = await HistoryClient.connect(options);
@@ -66,6 +75,17 @@ test('rejects server action requests instead of granting approval', async (t) =>
   const client = await HistoryClient.connect(options);
   t.after(() => client.dispose());
   assert.equal((await client.listThreads({})).data[0].id, 'thread-one');
+});
+
+test('loads indexed history without waiting for rollout metadata repair', async (t) => {
+  const options = await fixtureOptions(t, 'indexed', 500);
+  const client = await HistoryClient.connect(options);
+  t.after(() => client.dispose());
+  const first = await client.listThreads();
+  assert.equal(first.data[0].id, 'thread-one');
+  const second = await client.listThreads({ cursor: first.nextCursor, searchTerm: 'needle' });
+  assert.equal(second.data[0].page, 2);
+  assert.equal(second.data[0].search, 'needle');
 });
 
 test('ignores stale responses and notifications', async (t) => {

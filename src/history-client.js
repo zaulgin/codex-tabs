@@ -2,6 +2,7 @@
 
 const { spawn } = require('node:child_process');
 const { StringDecoder } = require('node:string_decoder');
+const { version } = require('../package.json');
 
 const MAX_LINE_BYTES = 8 * 1024 * 1024;
 const MESSAGES = {
@@ -17,6 +18,11 @@ const MESSAGES = {
 
 function historyError(code) {
   return Object.assign(new Error(MESSAGES[code]), { code });
+}
+
+function historyErrorMessage(error) {
+  return typeof error?.code === 'string' && Object.hasOwn(MESSAGES, error.code)
+    ? MESSAGES[error.code] : undefined;
 }
 
 class HistoryClient {
@@ -41,7 +47,7 @@ class HistoryClient {
     }
     try {
       await client.#request('initialize', {
-        clientInfo: { name: 'codex_tabs', version: '0.1.0' },
+        clientInfo: { name: 'codex_tabs', version },
       }, signal);
       if (signal?.aborted) throw historyError('HISTORY_CANCELLED');
       await client.#write({ method: 'initialized' });
@@ -83,6 +89,8 @@ class HistoryClient {
       const result = await this.#request('thread/list', {
         sourceKinds: ['cli', 'vscode', 'appServer'],
         modelProviders: [], sortKey: 'updated_at', limit: 50,
+        // Reuse Codex's index; scanning and repairing large rollouts can time out.
+        useStateDbOnly: true,
         ...(cursor === null ? {} : { cursor }),
         ...(searchTerm === null ? {} : { searchTerm }),
       }, signal);
@@ -222,4 +230,4 @@ class HistoryClient {
   }
 }
 
-module.exports = { HistoryClient };
+module.exports = { HistoryClient, historyErrorMessage };

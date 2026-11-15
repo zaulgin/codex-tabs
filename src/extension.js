@@ -3,7 +3,7 @@
 const vscode = require('vscode');
 const { createTabs, TabError } = require('./tabs');
 const { conversationUri } = require('./routes');
-const { HistoryClient } = require('./history-client');
+const { HistoryClient, historyErrorMessage } = require('./history-client');
 const { showHistory } = require('./history-picker');
 const { historyOptions } = require('./runtime');
 
@@ -17,7 +17,7 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand(name, async () => {
       try { await action(); } catch (error) {
         // Never display upstream stderr/errors: they may contain private configuration.
-        await vscode.window.showErrorMessage(error instanceof TabError ? error.message : failure);
+        await vscode.window.showErrorMessage(error instanceof TabError ? error.message : historyErrorMessage(error) || failure);
       }
     }));
   }

@@ -41,7 +41,7 @@ input.on('line', (line) => {
   const message = JSON.parse(line);
   if (message.method === 'initialize') {
     assert.equal(message.params.clientInfo.name, 'codex_tabs');
-    assert.equal(message.params.clientInfo.version, '0.1.0');
+    assert.match(message.params.clientInfo.version, /^\d+\.\d+\.\d+$/);
     if (scenario === 'startup-timeout') return;
     if (scenario === 'stderr-flood') {
       process.stderr.write(marker.repeat(65536), () => {
@@ -77,6 +77,8 @@ input.on('line', (line) => {
   if (useStateDbOnly !== undefined) assert.equal(useStateDbOnly, true);
   if (cursor !== undefined) assert.equal(cursor, 'page-two');
   if (searchTerm !== undefined) assert.equal(searchTerm, 'needle');
+  // Scanning a large rollout directory can outlive the client's request timeout.
+  if (scenario === 'indexed' && useStateDbOnly !== true) return;
   if (['timeout', 'ignore-term'].includes(scenario)) return;
   if (scenario === 'server-error') {
     send({ id: message.id, error: { code: -32000, message: marker, data: marker } });
