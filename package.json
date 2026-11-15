@@ -1,0 +1,39 @@
+{
+  "name": "codex-tabs",
+  "displayName": "Codex Tabs",
+  "description": "Open official Codex conversations in separate editor tabs and browse shared local history.",
+  "version": "0.1.0",
+  "publisher": "codex-tabs-dev",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": { "vscode": "^1.96.0", "node": ">=22.9.0" },
+  "categories": ["Other"],
+  "main": "./src/extension.js",
+  "extensionKind": ["workspace"],
+  "extensionDependencies": ["openai.chatgpt"],
+  "capabilities": {
+    "untrustedWorkspaces": { "supported": false },
+    "virtualWorkspaces": { "supported": false }
+  },
+  "contributes": {
+    "commands": [
+      { "command": "codexTabs.newChat", "title": "New Chat in Tab", "category": "Codex Tabs", "icon": "$(add)" },
+      { "command": "codexTabs.openHistory", "title": "Open Chat from History", "category": "Codex Tabs", "icon": "$(history)" },
+      { "command": "codexTabs.openChatById", "title": "Open Chat by ID", "category": "Codex Tabs" }
+    ],
+    "configuration": {
+      "title": "Codex Tabs",
+      "properties": {
+        "codexTabs.cliPath": {
+          "type": "string", "default": "", "scope": "machine", "restricted": true,
+          "description": "Executable used to read history. Empty uses the official Codex extension's executable. This is a path, not a shell command."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --test test/routes.test.js test/tabs.test.js test/runtime.test.js test/history-picker.test.js test/history-client.test.js",
+    "package": "vsce package --no-dependencies --allow-missing-repository --skip-license --out codex-tabs-0.1.0.vsix"
+  },
+  "devDependencies": { "@vscode/vsce": "4.1.1" }
+}
